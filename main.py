@@ -8,7 +8,7 @@ import pytz
 import requests
 import yfinance as yf
 
-# Render Port എറർ പരിഹരിക്കാൻ Flask സർവർ നൽകുന്നു
+# Render Port എറർ പരിഹരിക്കാൻ Flask സർവർ
 app = Flask("")
 
 
@@ -22,12 +22,16 @@ def run_web_server():
   app.run(host="0.0.0.0", port=port)
 
 
-# വെബ് സർവർ ബാക്ക്ഗ്രൗണ്ടിൽ സ്റ്റാർട്ട് ചെയ്യുന്നു
 Thread(target=run_web_server).start()
 
 # ടെലിഗ്രാം വിവരങ്ങൾ
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 CHAT_ID = os.environ.get("CHAT_ID")
+
+
+def send_telegram(msg):
+  url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+  requests.post(url, data={"chat_id": CHAT_ID, "text": msg})
 
 
 def get_nifty50_universe():
@@ -97,11 +101,6 @@ def get_nifty50_universe():
 NIFTY_UNIVERSE = get_nifty50_universe()
 DYNAMIC_WATCHLIST = []
 triggered_stocks = set()
-
-
-def send_telegram(msg):
-  url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-  requests.post(url, data={"chat_id": CHAT_ID, "text": msg})
 
 
 def run_market_analysis_and_watchlist():
@@ -180,6 +179,12 @@ def scan_selected_stocks():
     except Exception as e:
       print(f"Error: {e}")
 
+
+# ബോട്ട് ഓണാകുമ്പോൾ സ്റ്റാർട്ടപ്പ് മെസ്സേജ് അയക്കുന്നു
+try:
+  send_telegram("🚀 Bot active aayi. System ready!")
+except Exception as e:
+  print(f"Startup Message Error: {e}")
 
 screener_done = False
 while True:
