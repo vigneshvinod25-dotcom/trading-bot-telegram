@@ -1,6 +1,6 @@
-from datetime import datetime
 import os
 import time
+from datetime import datetime
 from threading import Thread
 from flask import Flask
 import pandas as pd
@@ -8,7 +8,7 @@ import pytz
 import requests
 import yfinance as yf
 
-# Render Port Error പരിഹരിക്കാൻ Flask സർവർ ചേർക്കുന്നു
+# Render Port എറർ പരിഹരിക്കാൻ Flask സർവർ നൽകുന്നു
 app = Flask("")
 
 
@@ -18,10 +18,11 @@ def home():
 
 
 def run_web_server():
-  port = int(os.environ.get("PORT", 8080))
+  port = int(os.environ.get("PORT", 10000))
   app.run(host="0.0.0.0", port=port)
 
 
+# വെബ് സർവർ ബാക്ക്ഗ്രൗണ്ടിൽ സ്റ്റാർട്ട് ചെയ്യുന്നു
 Thread(target=run_web_server).start()
 
 # ടെലിഗ്രാം വിവരങ്ങൾ
@@ -191,7 +192,7 @@ while True:
       run_market_analysis_and_watchlist()
       screener_done = True
 
-    # 9:30 AM മുതൽ: വാച്ച്‌ലിസ്റ്റ് സ്റ്റോക്കുകൾ മാത്രം സ്കാൻ ചെയ്യുന്നു
+    # 9:30 AM മുതൽ: വാച്ച്‌ലിസ്റ്റ് സ്റ്റോക്കുകൾ സ്കാൻ ചെയ്യുന്നു
     if now.hour >= 9 and now.minute >= 30 and DYNAMIC_WATCHLIST:
       scan_selected_stocks()
 
