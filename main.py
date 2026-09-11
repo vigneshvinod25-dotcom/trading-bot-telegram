@@ -8,7 +8,7 @@ import pytz
 import requests
 import yfinance as yf
 
-# Render Port എറർ പരിഹരിക്കാൻ Flask സർവർ
+# Render Port എറർ ഒഴിവാക്കാൻ Flask സർവർ
 app = Flask("")
 
 
@@ -134,15 +134,15 @@ def run_market_analysis_and_watchlist():
 
 def send_trade_signal(stock_name, strategy, price):
   entry = round(price, 2)
-  target = round(entry * 1.02, 2)
-  sl = round(entry * 0.99, 2)
+  target = round(entry * 1.01, 2)  # 1% Target
+  sl = round(entry * 0.995, 2)  # 0.5% Stop Loss
 
   msg = (
       f"🚨 TRADE SIGNAL: {stock_name}\n"
       f"Strategy: {strategy}\n\n"
       f"Entry: ₹{entry}\n"
-      f"Target (2%): ₹{target}\n"
-      f"Stop Loss (1%): ₹{sl}"
+      f"Target (1%): ₹{target}\n"
+      f"Stop Loss (0.5%): ₹{sl}"
   )
   send_telegram(msg)
 
@@ -180,9 +180,9 @@ def scan_selected_stocks():
       print(f"Error: {e}")
 
 
-# ബോട്ട് ഓണാകുമ്പോൾ സ്റ്റാർട്ടപ്പ് മെസ്സേജ് അയക്കുന്നു
+# ബോട്ട് സ്റ്റാർട്ടപ്പ് മെസ്സേജ്
 try:
-  send_telegram("🚀 Bot active aayi. System ready!")
+  send_telegram("🚀 Bot active aayi. Target 1% & SL 0.5% set aakki!")
 except Exception as e:
   print(f"Startup Message Error: {e}")
 
@@ -192,16 +192,13 @@ while True:
   now = datetime.now(tz)
 
   if now.weekday() < 5:
-    # 9:25 AM: വാച്ച്‌ലിസ്റ്റ് ഉണ്ടാക്കുന്നു
     if now.hour == 9 and now.minute >= 25 and not screener_done:
       run_market_analysis_and_watchlist()
       screener_done = True
 
-    # 9:30 AM മുതൽ: വാച്ച്‌ലിസ്റ്റ് സ്റ്റോക്കുകൾ സ്കാൻ ചെയ്യുന്നു
     if now.hour >= 9 and now.minute >= 30 and DYNAMIC_WATCHLIST:
       scan_selected_stocks()
 
-    # വൈകുന്നേരം 4 മണിക്ക് റീസെറ്റ് ചെയ്യുന്നു
     if now.hour >= 16:
       screener_done = False
       DYNAMIC_WATCHLIST = []
