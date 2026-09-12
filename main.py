@@ -1,18 +1,9 @@
+import time
 import pandas as pd
 import yfinance as yf
 
 
-# Nifty 50 സ്റ്റോക്കുകൾ കണ്ടെത്തുന്ന ഫംഗ്ഷൻ
 def get_nifty50_list():
-  try:
-    url = "https://en.wikipedia.org/wiki/NIFTY_50"
-    tables = pd.read_html(url)
-    for df in tables:
-      if "Symbol" in df.columns:
-        return [f"{symbol}.NS" for symbol in df["Symbol"].dropna()]
-  except Exception:
-    pass
-
   return [
       "ADANIENT.NS",
       "ADANIPORTS.NS",
@@ -73,12 +64,15 @@ total_trades = 0
 wins = 0
 losses = 0
 
-print(f"⏳ {len(NIFTY_STOCKS)} Nifty 50 സ്റ്റോക്കുകൾ സ്കാൻ ചെയ്യുന്നു...")
+print("⏳ 2 മാസത്തെ ബാക്ക്ടെസ്റ്റിംഗ് ആരംഭിക്കുന്നു...")
 
 for symbol in NIFTY_STOCKS:
   try:
-    # 60 ദിവസം (2 മാസം) 5 മിനിറ്റ് ഡാറ്റ
-    df = yf.download(symbol, period="60d", interval="5m", progress=False)
+    # Yahoo API ബ്ലോക്ക് ഒഴിവാക്കാൻ 1 സെക്കൻഡ് ഇടവേള
+    time.sleep(1)
+
+    ticker = yf.Ticker(symbol)
+    df = ticker.history(period="60d", interval="5m")
 
     if df.empty or len(df) < 100:
       continue
@@ -88,7 +82,6 @@ for symbol in NIFTY_STOCKS:
     df["Vol_Avg"] = df["Volume"].rolling(20).mean()
     df["Date"] = df.index.date
 
-    # ഓരോ ദിവസത്തെയും ഡാറ്റ പരിശോധിക്കുന്നു
     for date, day_df in df.groupby("Date"):
       if len(day_df) < 15:
         continue
@@ -99,7 +92,7 @@ for symbol in NIFTY_STOCKS:
       gain = ((price_925 - open_price) / open_price) * 100
 
       if gain < 0.3:
-        continue  # 0.3% ഗെയിൻ ഇല്ലെങ്കിൽ ഒഴിവാക്കുന്നു
+        continue
 
       # 2. ORB High (ആദ്യ 15 മിനിറ്റ്)
       orb_high = day_df["High"].iloc[:3].max()
@@ -108,7 +101,7 @@ for symbol in NIFTY_STOCKS:
       typical = (day_df["High"] + day_df["Low"] + day_df["Close"]) / 3
       vwap = (typical * day_df["Volume"]).cumsum() / day_df["Volume"].cumsum()
 
-      # 9:30 AM - 3:30 PM ട്രേഡ് സ്കാനിംഗ്
+      # 9:30 AM - 3:30 PM സ്കാനിംഗ്
       for i in range(3, len(day_df) - 1):
         curr_close = day_df["Close"].iloc[i]
         prev_close = day_df["Close"].iloc[i - 1]
@@ -128,7 +121,7 @@ for symbol in NIFTY_STOCKS:
           if orb_signal or vwap_signal:
             entry = curr_close
             target = entry * 1.01  # 1% Target
-            sl = entry * 0.995  # 0.5% Stop Loss
+            sl = entry * 0.995  # 0.5% SL
 
             future = day_df.iloc[i + 1 :]
             total_trades += 1
@@ -138,11 +131,11 @@ for symbol in NIFTY_STOCKS:
             elif future["Low"].min() <= sl:
               losses += 1
 
-            break  # ഒരു ദിവസം ഒരു സ്റ്റോക്കിൽ ഒരു ട്രേഡ് മാത്രം
-  except Exception:
-    pass
+            break  # ഒരു ദിവസം ഒരു ട്രേഡ് മാത്രം
+  except Exception as e:
+    print(f"Error loading {symbol}: {e}")
 
-print("\n=== 2 MONTH FULL NIFTY 50 BACKTEST RESULT ===")
+print("\n=== 2 MONTHS BACKTEST RESULT ===")
 print(f"Total Trades: {total_trades}")
 print(f"Wins (🎯 Target Hit): {wins}")
 print(f"Losses (❌ SL Hit): {losses}")
